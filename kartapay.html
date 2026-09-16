@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>KartaPay — kartadan kartaga o'tkazma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #eef6f4;
+    --frame-bg: #f5faf9;
+    --surface: #ffffff;
+    --surface-2: #eef8f6;
+    --ink: #10201c;
+    --ink-dim: #6b8079;
+    --border: #dcece8;
+    --accent: #00c8a8;
+    --accent-ink: #ffffff;
+    --teal: #00c8a8;
+    --danger: #e5484d;
+    --chip-bg: #e0f7f1;
+    --shadow: 0 20px 44px -18px rgba(0,60,50,0.22);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg: #071613;
+      --frame-bg: #0a1a1600;
+      --surface: #10221d;
+      --surface-2: #142a24;
+      --ink: #eafaf5;
+      --ink-dim: #86a89e;
+      --border: #1e3831;
+      --accent: #1fe0b8;
+      --accent-ink: #04211b;
+      --teal: #1fe0b8;
+      --danger: #ff6b6f;
+      --chip-bg: #163329;
+      --shadow: 0 20px 44px -16px rgba(0,0,0,0.55);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #071613;
+    --frame-bg: #0a1a1600;
+    --surface: #10221d;
+    --surface-2: #142a24;
+    --ink: #eafaf5;
+    --ink-dim: #86a89e;
+    --border: #1e3831;
+    --accent: #1fe0b8;
+    --accent-ink: #04211b;
+    --teal: #1fe0b8;
+    --danger: #ff6b6f;
+    --chip-bg: #163329;
+    --shadow: 0 20px 44px -16px rgba(0,0,0,0.55);
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; padding:0; min-height:100%; }
+  body{
+    font-family:'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    display:flex; justify-content:center;
+    min-height:100vh;
+  }
+
+  #app{
+    width:100%; max-width:430px; min-height:100vh;
+    background: var(--frame-bg);
+    display:flex; flex-direction:column;
+    position:relative;
+  }
+
+  header.topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:22px 20px 8px 20px;
+  }
+  .greet .hello{ font-size:11.5px; color:var(--ink-dim); font-weight:700; letter-spacing:0.2px; }
+  .greet .username{ font-size:18px; font-weight:800; margin-top:2px; letter-spacing:-0.2px; }
+  .avatar{
+    width:38px; height:38px; border-radius:50%;
+    background: linear-gradient(135deg, var(--accent), #7fe8d3);
+    display:flex; align-items:center; justify-content:center;
+    font-size:13.5px; font-weight:800; color:#04211b;
+  }
+
+  .type-toggle{
+    display:flex; background:var(--chip-bg); border-radius:13px; padding:4px; gap:4px; margin-bottom:14px;
+  }
+  .type-btn{
+    flex:1; border:none; background:transparent; padding:9px 6px; border-radius:9px;
+    font-family:inherit; font-weight:700; font-size:13px; color:var(--ink-dim); cursor:pointer;
+    transition:background 0.15s ease, color 0.15s ease;
+  }
+  .type-btn.active{ background:var(--surface); color:var(--accent); box-shadow:0 3px 8px rgba(0,0,0,0.08); }
+
+  main{ flex:1; padding:14px 20px 100px 20px; overflow-y:auto; }
+
+  .section-title{
+    font-size:13px; font-weight:700; color:var(--ink-dim);
+    letter-spacing:0.2px; margin:22px 0 10px 2px;
+  }
+  .section-title:first-of-type{ margin-top:8px; }
+
+  /* card carousel */
+  .card-scroll{
+    display:flex; gap:12px; overflow-x:auto; padding:4px 2px 10px 2px;
+    scroll-snap-type:x proximity;
+  }
+  .card-scroll::-webkit-scrollbar{ display:none; }
+  .bank-card{
+    flex:0 0 auto; width:230px; height:142px; border-radius:18px;
+    padding:16px 18px; color:#fff; position:relative; overflow:hidden;
+    cursor:pointer; scroll-snap-align:start;
+    box-shadow: 0 14px 26px -12px rgba(0,0,0,0.35);
+    border:2px solid transparent;
+    transition:transform 0.15s ease, border-color 0.15s ease;
+    display:flex; flex-direction:column; justify-content:space-between;
+  }
+  .bank-card:active{ transform:scale(0.98); }
+  .bank-card.selected{ border-color:#ffffffb0; }
+  .bank-card::after{
+    content:''; position:absolute; right:-30px; top:-30px; width:140px; height:140px;
+    border-radius:50%; background:rgba(255,255,255,0.12);
+  }
+  .bank-card .row1{ display:flex; justify-content:space-between; align-items:flex-start; }
+  .bank-card .bankname{ font-size:12.5px; font-weight:700; opacity:0.92; }
+  .bank-card .network{ font-size:11px; font-weight:800; opacity:0.85; letter-spacing:0.5px; }
+  .bank-card .balance{ font-size:20px; font-weight:800; letter-spacing:-0.2px; }
+  .bank-card .num{ font-size:13px; letter-spacing:1.5px; font-weight:600; opacity:0.92; font-variant-numeric: tabular-nums; }
+  .bank-card .holder{ font-size:10.5px; opacity:0.8; margin-top:2px; font-weight:600; letter-spacing:0.3px; }
+  .main-badge{
+    position:absolute; top:14px; right:16px; font-size:9.5px; font-weight:800;
+    background:rgba(255,255,255,0.22); padding:3px 8px; border-radius:999px; letter-spacing:0.3px;
+  }
+
+  .recipient-hint{
+    display:none; align-items:center; gap:7px; margin:8px 2px 0 2px;
+    font-size:12.5px; font-weight:700; color:var(--teal);
+  }
+  .recipient-hint.show{ display:flex; }
+  .recipient-hint .dot{ width:6px; height:6px; border-radius:50%; background:var(--teal); flex:0 0 auto; }
+  .recipient-hint.loading{ color:var(--ink-dim); }
+  .recipient-hint.loading .dot{ background:var(--ink-dim); }
+
+  .add-card{
+    flex:0 0 auto; width:96px; height:142px; border-radius:18px;
+    border:1.6px dashed var(--border); background:transparent;
+    color:var(--ink-dim); display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:6px; font-size:11px; font-weight:700; cursor:pointer;
+  }
+
+  /* form card */
+  .panel{
+    background: var(--surface); border:1px solid var(--border);
+    border-radius:18px; padding:16px; box-shadow: var(--shadow);
+  }
+
+  .field-label{ font-size:12px; font-weight:700; color:var(--ink-dim); margin:0 0 7px 2px; }
+  .input-row{
+    display:flex; align-items:center; gap:10px;
+    background:var(--surface-2); border:1px solid var(--border);
+    border-radius:13px; padding:12px 14px;
+  }
+  .input-row input{
+    border:none; outline:none; background:transparent; color:var(--ink);
+    font-family:inherit; font-size:15.5px; font-weight:600; width:100%;
+    letter-spacing:0.4px;
+  }
+  .input-row input::placeholder{ color:var(--ink-dim); font-weight:500; letter-spacing:0; }
+  .input-row .badge{
+    font-size:10.5px; font-weight:800; color:var(--accent);
+    background:var(--chip-bg); padding:4px 8px; border-radius:7px; white-space:nowrap;
+  }
+  .input-row .suffix{ color:var(--ink-dim); font-weight:700; font-size:14px; white-space:nowrap; }
+
+  .gap10{ height:10px; }
+  .gap14{ height:14px; }
+
+  .chip-row{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .chip{
+    font-size:12.5px; font-weight:700; padding:7px 12px; border-radius:999px;
+    background:var(--chip-bg); color:var(--accent); border:1px solid transparent; cursor:pointer;
+  }
+  .chip.active{ background:var(--accent); color:var(--accent-ink); }
+
+  .summary-line{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:13px; color:var(--ink-dim); padding:5px 2px;
+  }
+  .summary-line b{ color:var(--ink); font-weight:700; }
+  .summary-line.total{ border-top:1px dashed var(--border); margin-top:6px; padding-top:10px; }
+  .summary-line.total b{ font-size:16px; color:var(--accent); }
+
+  .error-msg{
+    font-size:12px; color:var(--danger); font-weight:700; margin:8px 2px 0 2px; min-height:14px;
+  }
+
+  .primary-btn{
+    width:100%; padding:15px; border:none; border-radius:14px;
+    background:var(--accent); color:var(--accent-ink);
+    font-family:inherit; font-size:15px; font-weight:800; letter-spacing:0.2px;
+    cursor:pointer; margin-top:16px;
+    box-shadow: 0 14px 26px -12px rgba(0,200,168,0.45);
+  }
+  .primary-btn:disabled{ opacity:0.45; box-shadow:none; cursor:not-allowed; }
+  .primary-btn:active:not(:disabled){ transform:translateY(1px); }
+
+  /* history */
+  .history-item{
+    display:flex; align-items:center; gap:12px;
+    padding:12px 4px; border-bottom:1px solid var(--border);
+  }
+  .history-item:last-child{ border-bottom:none; }
+  .hicon{
+    width:38px; height:38px; border-radius:11px; background:var(--chip-bg);
+    display:flex; align-items:center; justify-content:center; font-size:16px; flex:0 0 auto;
+  }
+  .hbody{ flex:1; min-width:0; }
+  .htitle{ font-size:13.5px; font-weight:700; }
+  .hsub{ font-size:11.5px; color:var(--ink-dim); margin-top:2px; }
+  .hamount{ font-size:14px; font-weight:800; white-space:nowrap; }
+  .hamount.neg{ color:var(--ink); }
+  .hstatus{ font-size:10.5px; color:var(--teal); font-weight:700; margin-top:2px; text-align:right; }
+
+  .empty-hist{ text-align:center; color:var(--ink-dim); font-size:12.5px; padding:26px 0; }
+
+  /* modal */
+  .overlay{
+    position:fixed; inset:0; background:rgba(8,9,18,0.55); backdrop-filter:blur(3px);
+    display:flex; align-items:flex-end; justify-content:center; z-index:40;
+    opacity:0; pointer-events:none; transition:opacity 0.22s ease;
+  }
+  .overlay.show{ opacity:1; pointer-events:auto; }
+  .sheet{
+    width:100%; max-width:430px; background:var(--surface);
+    border-radius:22px 22px 0 0; padding:22px 20px 26px 20px;
+    transform:translateY(16px); transition:transform 0.24s ease;
+    border:1px solid var(--border); border-bottom:none;
+  }
+  .overlay.show .sheet{ transform:translateY(0); }
+  .sheet h3{ margin:0 0 4px 0; font-size:17px; font-weight:800; }
+  .sheet .sub{ font-size:12.5px; color:var(--ink-dim); margin-bottom:16px; }
+  .sheet-actions{ display:flex; gap:10px; margin-top:16px; }
+  .btn-secondary{
+    flex:1; padding:13px; border-radius:13px; border:1px solid var(--border);
+    background:transparent; color:var(--ink); font-family:inherit; font-weight:700; font-size:14px; cursor:pointer;
+  }
+  .btn-primary-sm{
+    flex:1.3; padding:13px; border-radius:13px; border:none;
+    background:var(--accent); color:var(--accent-ink); font-family:inherit; font-weight:800; font-size:14px; cursor:pointer;
+  }
+
+  .success-wrap{ text-align:center; padding:8px 0 4px 0; }
+  .success-check{
+    width:64px; height:64px; border-radius:50%; margin:0 auto 14px auto;
+    background:var(--teal); color:#fff; display:flex; align-items:center; justify-content:center;
+    font-size:30px;
+  }
+  .success-amt{ font-size:24px; font-weight:800; margin-bottom:4px; }
+  .success-sub{ font-size:12.5px; color:var(--ink-dim); margin-bottom:6px; }
+
+  .receipt{
+    background:var(--surface-2); border:1px dashed var(--border); border-radius:14px;
+    padding:16px 16px 4px 16px; margin-top:2px;
+  }
+  .receipt-head{ text-align:center; margin-bottom:10px; }
+  .receipt-head .check-mark{
+    width:46px; height:46px; border-radius:50%; background:var(--teal); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:22px; margin:0 auto 8px auto;
+  }
+  .receipt-head .status{ font-size:13px; font-weight:800; color:var(--teal); }
+  .receipt-head .rid{ font-size:11px; color:var(--ink-dim); margin-top:2px; font-variant-numeric: tabular-nums; }
+  .receipt-line{
+    display:flex; justify-content:space-between; gap:10px; font-size:12.5px;
+    padding:7px 0; border-bottom:1px dashed var(--border);
+  }
+  .receipt-line:last-child{ border-bottom:none; }
+  .receipt-line span:first-child{ color:var(--ink-dim); font-weight:600; }
+  .receipt-line span:last-child{ font-weight:700; text-align:right; }
+  .receipt-line.big span:last-child{ font-size:16px; color:var(--accent); font-weight:800; }
+
+  ::selection{ background:var(--chip-bg); }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="greet">
+      <div class="hello">Xush kelibsiz</div>
+      <div class="username" id="greetName">Foydalanuvchi</div>
+    </div>
+    <div class="avatar" id="avatarInitials">—</div>
+  </header>
+
+  <main>
+    <div class="section-title">Kartalaringiz</div>
+    <div class="card-scroll" id="cardScroll"></div>
+
+    <div class="section-title">Kimga yuborasiz?</div>
+    <div class="panel">
+      <div class="type-toggle">
+        <button class="type-btn active" id="typeCardBtn" type="button">💳 Karta</button>
+        <button class="type-btn" id="typePhoneBtn" type="button">📱 Raqam</button>
+      </div>
+
+      <div id="cardField">
+        <div class="field-label">Karta raqami</div>
+        <div class="input-row">
+          <input id="toCardInput" inputmode="numeric" maxlength="19" placeholder="0000 0000 0000 0000" />
+          <span class="badge" id="networkBadge" style="display:none;"></span>
+        </div>
+      </div>
+
+      <div id="phoneField" style="display:none;">
+        <div class="field-label">Telefon raqami</div>
+        <div class="input-row">
+          <span class="suffix" style="margin-right:2px;">+998</span>
+          <input id="toPhoneInput" inputmode="numeric" maxlength="12" placeholder="90 123 45 67" />
+          <span class="badge" id="phoneBadge" style="display:none;"></span>
+        </div>
+      </div>
+
+      <div class="recipient-hint" id="recipientHint"><span class="dot"></span><span id="recipientName"></span></div>
+
+      <div class="gap14"></div>
+      <div class="field-label">Summa</div>
+      <div class="input-row">
+        <input id="amountInput" inputmode="numeric" placeholder="0" />
+        <span class="suffix">so'm</span>
+      </div>
+      <div class="chip-row" id="chipRow"></div>
+
+      <div class="gap14"></div>
+      <div class="field-label">Izoh (ixtiyoriy)</div>
+      <div class="input-row">
+        <input id="commentInput" maxlength="40" placeholder="Masalan: qarz qaytarish" />
+      </div>
+
+      <div class="gap10"></div>
+      <div class="summary-line"><span>Komissiya</span><b id="feeVal">0 so'm</b></div>
+      <div class="summary-line total"><span>Jami yechiladi</span><b id="totalVal">0 so'm</b></div>
+
+      <div class="error-msg" id="errorMsg"></div>
+      <button class="primary-btn" id="sendBtn" disabled>O'tkazish</button>
+    </div>
+
+    <div class="section-title">So'nggi operatsiyalar</div>
+    <div class="panel" id="historyPanel" style="padding:6px 12px;"></div>
+  </main>
+</div>
+
+<div class="overlay" id="confirmOverlay">
+  <div class="sheet">
+    <h3>Tasdiqlang</h3>
+    <div class="sub">Ma'lumotlarni tekshirib chiqing</div>
+    <div class="summary-line"><span>Qayerdan</span><b id="cFrom">—</b></div>
+    <div class="summary-line"><span>Qayerga</span><b id="cTo">—</b></div>
+    <div class="summary-line"><span>Summa</span><b id="cAmount">—</b></div>
+    <div class="summary-line"><span>Komissiya</span><b id="cFee">—</b></div>
+    <div class="summary-line total"><span>Jami</span><b id="cTotal">—</b></div>
+    <div class="sheet-actions">
+      <button class="btn-secondary" id="cancelBtn">Bekor qilish</button>
+      <button class="btn-primary-sm" id="confirmBtn">Tasdiqlash</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="successOverlay">
+  <div class="sheet">
+    <div class="success-wrap">
+      <div class="success-check">✓</div>
+      <div class="success-amt" id="sAmount">0 so'm</div>
+      <div class="success-sub" id="sTo">kartaga o'tkazildi</div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-secondary" id="closeSuccessBtn">Yopish</button>
+      <button class="btn-primary-sm" id="viewReceiptBtn">Chekni ko'rish</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="receiptOverlay">
+  <div class="sheet">
+    <h3>To'lov cheki</h3>
+    <div class="sub">Operatsiya tafsilotlari</div>
+    <div class="receipt" id="receiptBody"></div>
+    <div class="sheet-actions">
+      <button class="btn-secondary" id="closeReceiptBtn">Yopish</button>
+      <button class="btn-primary-sm" id="downloadReceiptBtn">Yuklab olish</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORE_KEY = 'kartapay_demo_v1';
+
+  var DEFAULT_STATE = {
+    cards: [
+      { id:'c1', bank:"Xalq banki", network:"UZCARD", last4:"4821", holder:"AKRAM KARIMOV", balance: 4250000, gradient: "linear-gradient(135deg,#00c8a8,#00e6c3)", isMain:true },
+      { id:'c2', bank:"Kapitalbank", network:"HUMO", last4:"9037", holder:"AKRAM KARIMOV", balance: 1180000, gradient: "linear-gradient(135deg,#17b48a,#0e8f6c)" },
+      { id:'c3', bank:"Ipoteka bank", network:"VISA", last4:"2216", holder:"AKRAM KARIMOV", balance: 760000, gradient: "linear-gradient(135deg,#2b2f45,#484f72)" }
+    ],
+    selectedCardId: 'c1',
+    history: [
+      { id:'h1', toMasked:"8600 12** **** 5541", toName:"SHERZOD NORMATOV", amount:150000, fee:1050, date: Date.now()-1000*60*60*20, fromBank:"Xalq banki", fromLast4:"4821", fromHolder:"AKRAM KARIMOV", type:"card" },
+      { id:'h2', toMasked:"+998 90 *** ** 23", toName:"DILNOZA YUSUPOVA", amount:80000, fee:640, date: Date.now()-1000*60*60*46, fromBank:"Xalq banki", fromLast4:"4821", fromHolder:"AKRAM KARIMOV", type:"phone" }
+    ]
+  };
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return JSON.parse(JSON.stringify(DEFAULT_STATE));
+      var parsed = JSON.parse(raw);
+      if (!parsed || !parsed.cards || !parsed.cards.length) return JSON.parse(JSON.stringify(DEFAULT_STATE));
+      return parsed;
+    }catch(e){
+      return JSON.parse(JSON.stringify(DEFAULT_STATE));
+    }
+  }
+  function saveState(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){ /* storage unavailable, continue in-memory */ }
+  }
+
+  var state = loadState();
+
+  function fmt(n){
+    n = Math.round(n || 0);
+    return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  }
+  function fmtMoney(n){ return fmt(n) + " so'm"; }
+
+  var FIRST_NAMES = ["SHERZOD","DILNOZA","AKRAM","MADINA","BOBUR","NARGIZA","OTABEK","ZARINA","JASUR","FERUZA","ANVAR","KAMOLA","RUSTAM","MALIKA","ISLOM","GULNOZA","TEMUR","SITORA","FARRUX","NIGORA"];
+  var LAST_NAMES = ["KARIMOV","YUSUPOVA","NORMATOV","TESHABOYEV","RASHIDOVA","ABDULLAYEV","SODIQOVA","MIRZAYEV","XOLMATOVA","QODIROV","AZIMOVA","ERGASHEV","NABIYEVA","SAIDOV","TURSUNOVA"];
+  function nameFromDigits(digits){
+    var sum = 0;
+    for (var i=0;i<digits.length;i++){ sum += digits.charCodeAt(i) * (i+3); }
+    var fi = sum % FIRST_NAMES.length;
+    var li = (sum >> 2) % LAST_NAMES.length;
+    return FIRST_NAMES[fi] + " " + LAST_NAMES[li];
+  }
+
+  function selectedCard(){
+    var found = null;
+    state.cards.forEach(function(c){ if (c.id === state.selectedCardId) found = c; });
+    return found || state.cards[0];
+  }
+
+  function titleCase(str){
+    return String(str || '').toLowerCase().split(' ').filter(Boolean).map(function(w){
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    }).join(' ');
+  }
+
+  function updateGreeting(){
+    var main = state.cards[0];
+    if (!main) return;
+    var name = titleCase(main.holder);
+    document.getElementById('greetName').textContent = name;
+    var initials = name.split(' ').filter(Boolean).map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase();
+    document.getElementById('avatarInitials').textContent = initials || '—';
+  }
+
+  // ---------- card carousel ----------
+  var cardScroll = document.getElementById('cardScroll');
+  function renderCards(){
+    cardScroll.innerHTML = '';
+    state.cards.forEach(function(c){
+      var el = document.createElement('div');
+      el.className = 'bank-card' + (c.id === state.selectedCardId ? ' selected' : '');
+      el.style.background = c.gradient;
+      el.innerHTML =
+        (c.isMain ? '<span class="main-badge">ASOSIY</span>' : '') +
+        '<div class="row1"><span class="bankname">' + c.bank + '</span><span class="network">' + c.network + '</span></div>' +
+        '<div><div class="balance">' + fmtMoney(c.balance) + '</div>' +
+        '<div class="num">•••• •••• •••• ' + c.last4 + '</div>' +
+        '<div class="holder">' + c.holder + '</div></div>';
+      el.addEventListener('click', function(){
+        state.selectedCardId = c.id;
+        renderCards();
+        validateForm();
+      });
+      cardScroll.appendChild(el);
+    });
+    var addBtn = document.createElement('div');
+    addBtn.className = 'add-card';
+    addBtn.innerHTML = '<span style="font-size:20px;">＋</span><span>Karta<br/>qo\'shish</span>';
+    addBtn.addEventListener('click', function(){
+      var last4 = String(Math.floor(1000 + Math.random()*8999));
+      var palettes = [
+        "linear-gradient(135deg,#e5484d,#ff8a7a)",
+        "linear-gradient(135deg,#f5a623,#ffce6a)",
+        "linear-gradient(135deg,#3b7bff,#6bb0ff)"
+      ];
+      var nc = {
+        id:'c' + Date.now(),
+        bank:"Yangi karta",
+        network: Math.random() > 0.5 ? "UZCARD" : "HUMO",
+        last4:last4,
+        holder:"A. KARIMOV",
+        balance: 500000,
+        gradient: palettes[Math.floor(Math.random()*palettes.length)]
+      };
+      state.cards.push(nc);
+      state.selectedCardId = nc.id;
+      saveState();
+      renderCards();
+      validateForm();
+    });
+    cardScroll.appendChild(addBtn);
+  }
+
+  // ---------- destination type toggle (card / phone) ----------
+  var typeCardBtn = document.getElementById('typeCardBtn');
+  var typePhoneBtn = document.getElementById('typePhoneBtn');
+  var cardField = document.getElementById('cardField');
+  var phoneField = document.getElementById('phoneField');
+  var activeType = 'card';
+
+  function setType(t){
+    activeType = t;
+    typeCardBtn.classList.toggle('active', t === 'card');
+    typePhoneBtn.classList.toggle('active', t === 'phone');
+    cardField.style.display = t === 'card' ? '' : 'none';
+    phoneField.style.display = t === 'phone' ? '' : 'none';
+    recipientHint.classList.remove('show','loading');
+    validateForm();
+  }
+  typeCardBtn.addEventListener('click', function(){ setType('card'); });
+  typePhoneBtn.addEventListener('click', function(){ setType('phone'); });
+
+  // ---------- to-card input formatting & network detection ----------
+  var toCardInput = document.getElementById('toCardInput');
+  var networkBadge = document.getElementById('networkBadge');
+  var toPhoneInput = document.getElementById('toPhoneInput');
+  var phoneBadge = document.getElementById('phoneBadge');
+  var recipientHint = document.getElementById('recipientHint');
+  var recipientNameEl = document.getElementById('recipientName');
+  var recipientNameCache = {};
+  var recipientTimer = null;
+
+  function triggerNameLookup(digits, requiredLen){
+    clearTimeout(recipientTimer);
+    if (digits.length === requiredLen){
+      recipientHint.classList.add('show', 'loading');
+      recipientNameEl.textContent = "Egasi aniqlanmoqda...";
+      recipientTimer = setTimeout(function(){
+        if (!recipientNameCache[digits]) recipientNameCache[digits] = nameFromDigits(digits);
+        recipientNameEl.textContent = recipientNameCache[digits];
+        recipientHint.classList.remove('loading');
+      }, 380);
+    } else {
+      recipientHint.classList.remove('show', 'loading');
+    }
+  }
+
+  toCardInput.addEventListener('input', function(){
+    var digits = toCardInput.value.replace(/\D/g,'').slice(0,16);
+    var groups = digits.match(/.{1,4}/g) || [];
+    toCardInput.value = groups.join(' ');
+
+    var net = '';
+    if (digits.startsWith('8600')) net = 'UZCARD';
+    else if (digits.startsWith('9860')) net = 'HUMO';
+    else if (digits.startsWith('4')) net = 'VISA';
+    else if (digits.startsWith('5')) net = 'MASTERCARD';
+
+    if (net){ networkBadge.style.display = 'inline-block'; networkBadge.textContent = net; }
+    else { networkBadge.style.display = 'none'; }
+
+    triggerNameLookup(digits, 16);
+    validateForm();
+  });
+
+  function formatPhone(digits){
+    var parts = [];
+    if (digits.length > 0) parts.push(digits.slice(0,2));
+    if (digits.length > 2) parts.push(digits.slice(2,5));
+    if (digits.length > 5) parts.push(digits.slice(5,7));
+    if (digits.length > 7) parts.push(digits.slice(7,9));
+    return parts.join(' ');
+  }
+  function operatorFromPrefix(p2){
+    if (['90','91'].indexOf(p2) > -1) return 'BEELINE';
+    if (['93','94'].indexOf(p2) > -1) return 'UCELL';
+    if (['95','98'].indexOf(p2) > -1) return 'UMS';
+    if (['97','99','33'].indexOf(p2) > -1) return 'UZMOBILE';
+    if (['88'].indexOf(p2) > -1) return 'UZTELECOM';
+    return '';
+  }
+
+  toPhoneInput.addEventListener('input', function(){
+    var digits = toPhoneInput.value.replace(/\D/g,'').slice(0,9);
+    toPhoneInput.value = formatPhone(digits);
+
+    var op = operatorFromPrefix(digits.slice(0,2));
+    if (op){ phoneBadge.style.display = 'inline-block'; phoneBadge.textContent = op; }
+    else { phoneBadge.style.display = 'none'; }
+
+    triggerNameLookup(digits, 9);
+    validateForm();
+  });
+
+  // ---------- amount input & chips ----------
+  var amountInput = document.getElementById('amountInput');
+  var chipRow = document.getElementById('chipRow');
+  var chipValues = [50000, 100000, 200000, 500000];
+  chipValues.forEach(function(v){
+    var chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.textContent = fmt(v);
+    chip.addEventListener('click', function(){
+      amountInput.value = fmt(v);
+      Array.prototype.forEach.call(chipRow.children, function(c){ c.classList.remove('active'); });
+      chip.classList.add('active');
+      validateForm();
+    });
+    chipRow.appendChild(chip);
+  });
+  amountInput.addEventListener('input', function(){
+    var digits = amountInput.value.replace(/\D/g,'');
+    amountInput.value = digits ? fmt(parseInt(digits,10)) : '';
+    Array.prototype.forEach.call(chipRow.children, function(c){ c.classList.remove('active'); });
+    validateForm();
+  });
+
+  function rawAmount(){
+    return parseInt((amountInput.value || '0').replace(/\D/g,''), 10) || 0;
+  }
+  function computeFee(amount){
+    if (!amount) return 0;
+    return Math.min(Math.round(amount * 0.007), 29000);
+  }
+
+  // ---------- validation ----------
+  var feeVal = document.getElementById('feeVal');
+  var totalVal = document.getElementById('totalVal');
+  var errorMsg = document.getElementById('errorMsg');
+  var sendBtn = document.getElementById('sendBtn');
+
+  function maskCard(digits){
+    return digits.slice(0,4) + ' ' + digits.slice(4,6) + '** **** ' + digits.slice(12,16);
+  }
+  function maskPhone(digits){
+    return '+998 ' + digits.slice(0,2) + ' *** ** ' + digits.slice(7,9);
+  }
+  function destInfo(){
+    if (activeType === 'card'){
+      var d = toCardInput.value.replace(/\D/g,'');
+      return { type:'card', digits:d, required:16 };
+    }
+    var p = toPhoneInput.value.replace(/\D/g,'');
+    return { type:'phone', digits:p, required:9 };
+  }
+  function maskDestGeneric(type, digits){
+    return type === 'card' ? maskCard(digits) : maskPhone(digits);
+  }
+
+  function validateForm(){
+    var amount = rawAmount();
+    var fee = computeFee(amount);
+    var total = amount + fee;
+    var dest = destInfo();
+    var card = selectedCard();
+
+    feeVal.textContent = fmtMoney(fee);
+    totalVal.textContent = fmtMoney(total);
+
+    var err = '';
+    if (dest.digits.length > 0 && dest.digits.length < dest.required){
+      err = dest.type === 'card' ? 'Karta raqami 16 xonali bo\'lishi kerak' : 'Telefon raqami 9 xonali bo\'lishi kerak';
+    }
+    else if (amount > 0 && amount < 1000) err = 'Minimal summa 1 000 so\'m';
+    else if (card && total > card.balance && amount > 0) err = 'Balansda mablag\' yetarli emas';
+
+    errorMsg.textContent = err;
+
+    var ready = dest.digits.length === dest.required && amount >= 1000 && card && total <= card.balance && !err;
+    sendBtn.disabled = !ready;
+    return ready;
+  }
+
+  [toCardInput, toPhoneInput, amountInput].forEach(function(el){ el.addEventListener('input', validateForm); });
+
+  // ---------- confirm sheet ----------
+  var confirmOverlay = document.getElementById('confirmOverlay');
+  var successOverlay = document.getElementById('successOverlay');
+
+  var pendingTx = null;
+
+  sendBtn.addEventListener('click', function(){
+    if (!validateForm()) return;
+    var amount = rawAmount();
+    var fee = computeFee(amount);
+    var card = selectedCard();
+    var dest = destInfo();
+    var toName = recipientNameCache[dest.digits] || nameFromDigits(dest.digits);
+    var maskedDest = maskDestGeneric(dest.type, dest.digits);
+    pendingTx = { amount:amount, fee:fee, digits:dest.digits, type:dest.type, cardId:card.id, toName:toName };
+
+    document.getElementById('cFrom').textContent = card.bank + ' •• ' + card.last4 + ' — ' + titleCase(card.holder);
+    document.getElementById('cTo').textContent = maskedDest + ' — ' + toName;
+    document.getElementById('cAmount').textContent = fmtMoney(amount);
+    document.getElementById('cFee').textContent = fmtMoney(fee);
+    document.getElementById('cTotal').textContent = fmtMoney(amount+fee);
+
+    confirmOverlay.classList.add('show');
+  });
+
+  document.getElementById('cancelBtn').addEventListener('click', function(){
+    confirmOverlay.classList.remove('show');
+    pendingTx = null;
+  });
+
+  var lastTx = null;
+
+  document.getElementById('confirmBtn').addEventListener('click', function(){
+    if (!pendingTx) return;
+    var card = null;
+    state.cards.forEach(function(c){ if (c.id === pendingTx.cardId) card = c; });
+    if (!card) return;
+
+    card.balance -= (pendingTx.amount + pendingTx.fee);
+    var maskedDest = maskDestGeneric(pendingTx.type, pendingTx.digits);
+    var txRecord = {
+      id: 'h' + Date.now(),
+      toMasked: maskedDest,
+      toName: pendingTx.toName,
+      type: pendingTx.type,
+      amount: pendingTx.amount,
+      fee: pendingTx.fee,
+      date: Date.now(),
+      fromBank: card.bank,
+      fromLast4: card.last4,
+      fromHolder: card.holder
+    };
+    state.history.unshift(txRecord);
+    saveState();
+
+    confirmOverlay.classList.remove('show');
+    document.getElementById('sAmount').textContent = fmtMoney(pendingTx.amount);
+    document.getElementById('sTo').textContent = maskedDest + ' ' + (pendingTx.type === 'card' ? 'kartaga' : 'raqamga') + ' o\'tkazildi';
+    successOverlay.classList.add('show');
+    lastTx = txRecord;
+
+    renderCards();
+    renderHistory();
+    updateGreeting();
+
+    toCardInput.value = ''; toPhoneInput.value = ''; amountInput.value = ''; document.getElementById('commentInput').value = '';
+    networkBadge.style.display = 'none';
+    phoneBadge.style.display = 'none';
+    recipientHint.classList.remove('show','loading');
+    Array.prototype.forEach.call(chipRow.children, function(c){ c.classList.remove('active'); });
+    validateForm();
+    pendingTx = null;
+  });
+
+  document.getElementById('closeSuccessBtn').addEventListener('click', function(){
+    successOverlay.classList.remove('show');
+  });
+  [confirmOverlay, successOverlay].forEach(function(ov){
+    ov.addEventListener('click', function(e){ if (e.target === ov) ov.classList.remove('show'); });
+  });
+
+  // ---------- receipt ----------
+  var receiptOverlay = document.getElementById('receiptOverlay');
+  var receiptBody = document.getElementById('receiptBody');
+  var downloadReceiptBtn = document.getElementById('downloadReceiptBtn');
+  var receiptTx = null;
+
+  function fmtDateTime(ts){
+    var d = new Date(ts);
+    function p(n){ return (n<10?'0':'')+n; }
+    return p(d.getDate())+'.'+p(d.getMonth()+1)+'.'+d.getFullYear()+' '+p(d.getHours())+':'+p(d.getMinutes());
+  }
+
+  function renderReceipt(tx){
+    receiptTx = tx;
+    receiptBody.innerHTML =
+      '<div class="receipt-head">' +
+        '<div class="check-mark">✓</div>' +
+        '<div class="status">TO\'LOV BAJARILDI</div>' +
+        '<div class="rid"># ' + tx.id.toUpperCase() + '</div>' +
+      '</div>' +
+      '<div class="receipt-line"><span>Sana</span><span>' + fmtDateTime(tx.date) + '</span></div>' +
+      '<div class="receipt-line"><span>Yuboruvchi</span><span>' + tx.fromBank + ' •• ' + tx.fromLast4 + '</span></div>' +
+      '<div class="receipt-line"><span>Qabul qiluvchi</span><span>' + tx.toMasked + '</span></div>' +
+      '<div class="receipt-line"><span>F.I.Sh</span><span>' + tx.toName + '</span></div>' +
+      '<div class="receipt-line"><span>Komissiya</span><span>' + fmtMoney(tx.fee) + '</span></div>' +
+      '<div class="receipt-line big"><span>Summa</span><span>' + fmtMoney(tx.amount) + '</span></div>';
+    receiptOverlay.classList.add('show');
+  }
+
+  document.getElementById('viewReceiptBtn').addEventListener('click', function(){
+    successOverlay.classList.remove('show');
+    if (lastTx) renderReceipt(lastTx);
+  });
+  document.getElementById('closeReceiptBtn').addEventListener('click', function(){
+    receiptOverlay.classList.remove('show');
+  });
+  receiptOverlay.addEventListener('click', function(e){ if (e.target === receiptOverlay) receiptOverlay.classList.remove('show'); });
+
+  function buildReceiptText(tx){
+    var lines = [
+      'KARTAPAY — TO\'LOV CHEKI',
+      '------------------------------',
+      '# ' + tx.id.toUpperCase(),
+      'Holat: BAJARILDI',
+      'Sana: ' + fmtDateTime(tx.date),
+      '',
+      'Yuboruvchi: ' + tx.fromBank + ' •• ' + tx.fromLast4,
+      'Qabul qiluvchi: ' + tx.toMasked,
+      'F.I.Sh: ' + tx.toName,
+      '',
+      'Summa: ' + fmtMoney(tx.amount),
+      'Komissiya: ' + fmtMoney(tx.fee),
+      'Jami yechildi: ' + fmtMoney(tx.amount + tx.fee),
+      '------------------------------',
+      'Rahmat, KartaPay!'
+    ];
+    return lines.join('\n');
+  }
+
+  downloadReceiptBtn.addEventListener('click', function(){
+    if (!receiptTx) return;
+    var originalLabel = downloadReceiptBtn.textContent;
+    downloadReceiptBtn.textContent = '...';
+    downloadReceiptBtn.disabled = true;
+
+    (async function(){
+      try{
+        if (!window.claude || typeof window.claude.use !== 'function'){
+          downloadReceiptBtn.textContent = 'Mavjud emas';
+          setTimeout(function(){ downloadReceiptBtn.textContent = originalLabel; downloadReceiptBtn.disabled = false; }, 1600);
+          return;
+        }
+        var downloads = await window.claude.use('downloads');
+        if (!downloads){
+          downloadReceiptBtn.textContent = 'Mavjud emas';
+          setTimeout(function(){ downloadReceiptBtn.textContent = originalLabel; downloadReceiptBtn.disabled = false; }, 1600);
+          return;
+        }
+        await downloads.save({ filename: 'chek_' + receiptTx.id + '.txt', data: buildReceiptText(receiptTx) });
+        downloadReceiptBtn.textContent = 'Saqlandi ✓';
+        setTimeout(function(){ downloadReceiptBtn.textContent = originalLabel; downloadReceiptBtn.disabled = false; }, 1600);
+      }catch(err){
+        downloadReceiptBtn.textContent = (err && err.code === 'declined') ? originalLabel : 'Xatolik';
+        setTimeout(function(){ downloadReceiptBtn.textContent = originalLabel; downloadReceiptBtn.disabled = false; }, 1600);
+      }
+    })();
+  });
+
+  // ---------- history ----------
+  function timeAgo(ts){
+    var diff = Date.now() - ts;
+    var h = Math.floor(diff / 3600000);
+    if (h < 1) return "hozirgina";
+    if (h < 24) return h + " soat oldin";
+    var d = Math.floor(h/24);
+    return d + " kun oldin";
+  }
+  var historyPanel = document.getElementById('historyPanel');
+  function renderHistory(){
+    historyPanel.innerHTML = '';
+    if (!state.history.length){
+      historyPanel.innerHTML = '<div class="empty-hist">Hali operatsiyalar yo\'q</div>';
+      return;
+    }
+    state.history.slice(0,12).forEach(function(h){
+      var row = document.createElement('div');
+      row.className = 'history-item';
+      row.style.cursor = 'pointer';
+      row.innerHTML =
+        '<div class="hicon">↗</div>' +
+        '<div class="hbody"><div class="htitle">' + h.toMasked + '</div>' +
+        '<div class="hsub">' + timeAgo(h.date) + ' · komissiya ' + fmt(h.fee) + ' so\'m</div></div>' +
+        '<div><div class="hamount neg">−' + fmt(h.amount) + '</div><div class="hstatus">Bajarildi</div></div>';
+      row.addEventListener('click', function(){ renderReceipt(h); });
+      historyPanel.appendChild(row);
+    });
+  }
+
+  renderCards();
+  renderHistory();
+  validateForm();
+})();
+</script>
+</body>
+</html>
